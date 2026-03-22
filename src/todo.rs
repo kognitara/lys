@@ -1,0 +1,118 @@
+use crate::branch::create_branch;
+use crate::utils::ok;
+use sqlite::{Connection, Error, State};
+use tabled::{Table, Tabled};
+#[derive(Tabled)]
+pub struct TodoItem {
+    #[tabled(rename = "ID")]
+    pub id: i64,
+    #[tabled(rename = "Title")]
+    pub title: String,
+    #[tabled(rename = "Status")]
+    pub status: String,
+    #[tabled(rename = "Assigned to")]
+    pub assigned_to: String,
+    #[tabled(rename = "Due date")]
+    pub due_date: String,
+}
+
+pub fn check_and_reset_todos(_conn: &Connection) -> Result<(), Error> {
+    Ok(())
+}
+
+pub fn start_todo(conn: &Connection, id: i64) -> Result<(), Error> {
+    let query = "UPDATE todos SET status = 'IN_PROGRESS' WHERE id = ?";
+    let mut stmt = conn.prepare(query)?;
+    stmt.bind((1, id))?;
+    stmt.next()?;
+    ok(format!("Task #{id} is now in progress").as_str());
+    Ok(())
+}
+pub fn add_todo(
+    conn: &Connection,
+    title: &str,
+    description: &str,
+    assigned_to: &str,
+    due_date: &str,
+) -> Result<(), Error> {
+    let query = "INSERT INTO todos (title, description, assigned_to, due_date) VALUES (?, ?, ?, ?)";
+    let mut stmt = conn.prepare(query)?;
+    stmt.bind((1, title))?;
+    stmt.bind((2, description))?;
+    stmt.bind((3, assigned_to))?;
+    stmt.bind((4, due_date))?;
+    stmt.next()?;
+    ok(format!("Todo appended : {title} (due date : {due_date})").as_str());
+    Ok(())
+}
+
+pub fn list_todos(conn: &Connection) -> Result<(), Error> {
+    // On récupère les colonnes, en gérant les NULL potentiels avec des valeurs par défaut
+    let query = "SELECT id, title, status, IFNULL(assigned_to, 'None'), IFNULL(due_date, 'No limit') FROM todos WHERE status != 'DONE' ORDER BY due_date ASC";
+    let mut stmt = conn.prepare(query)?;
+    let mut todos = Vec::new();
+
+    while let Ok(State::Row) = stmt.next() {
+        todos.push(TodoItem {
+            id: stmt.read(0)?,
+            title: stmt.read(1)?,
+            status: stmt.read(2)?,
+            assigned_to: stmt.read(3)?,
+            due_date: stmt.read(4)?,
+        });
+    }
+    if todos.is_empty() {
+        ok("No pending tasks. You're all caught up!");
+    } else {
+        let t = Table::new(&todos);
+        println!("{t}");
+    }
+    Ok(())
+}
+
+pub fn create_branches_from_todos(conn: &Connection) -> Result<(), Error> {
+    let mut stmt = conn.prepare("SELECT * FROM todos WHERE status != 'DONE'")?;
+    let mut todos: Vec<TodoItem> = Vec::new();
+    while let Ok(State::Row) = stmt.next() {
+        todos.push(TodoItem {
+            id: stmt.read(0)?,
+            title: stmt.read(1)?,
+            status: stmt.read(2)?,
+            assigned_to: stmt.read(3)?,
+            due_date: stmt.read(4)?,
+        });
+    }
+    for todo in &todos {
+        let branch_name = format!("{}", todo.title.replace(" ", "-").replace("_", "-"));
+        create_branch(conn, branch_name.as_str()).expect("failed to create the branch");
+    }
+    Ok(())
+}
+pub fn create_branches_from_todo(conn: &Connection, id: i64) -> Result<(), Error> {
+    let mut stmt = conn.prepare("SELECT * FROM todos WHERE id = ?")?;
+    stmt.bind((1, id))?;
+    let mut todos: Vec<TodoItem> = Vec::new();
+    while let Ok(State::Row) = stmt.next() {
+        todos.push(TodoItem {
+            id: stmt.read(0)?,
+            title: stmt.read(1)?,
+            status: stmt.read(2)?,
+            assigned_to: stmt.read(3)?,
+            due_date: stmt.read(4)?,
+        });
+    }
+    for todo in &todos {
+        let branch_name = format!("{}", todo.title.replace(" ", "-").replace("_", "-"));
+        create_branch(conn, branch_name.as_str()).expect("failed to create the branch");
+    }
+    Ok(())
+}
+
+pub fn complete_todo(conn: &Connection, id: i64) -> Result<(), Error> {
+    let query = "UPDATE todos SET status = 'DONE' WHERE id = ?";
+    let mut stmt = conn.prepare(query)?;
+    stmt.bind((1, id))?;
+    stmt.next()?;
+    ok(format!("Task #{id} done !").as_str());
+    Ok(())
+}

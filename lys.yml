@@ -1,0 +1,8 @@
+title: A modern vcs
+port: 7789
+description: local first vcs
+logo: lys.svg
+favicon:  favicon.ico
+footer: (c) 2026 Lys
+homepage: https://git.dualys.org
+documentation: https://git.dualys.org
