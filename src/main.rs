@@ -332,7 +332,7 @@ fn cli() -> Command {
                 .subcommand(Command::new("list").about("list messages")),
         )
         .subcommand(
-            Command::new("sync")
+            Command::new("backup")
                 .about("Backup repository to a destination (USB, Drive...)")
                 .arg(
                     Arg::new("path")
@@ -342,9 +342,9 @@ fn cli() -> Command {
                 ),
         )
         .subcommand(
-            Command::new("checkout")
-                .about("Switch branches or restore working tree files")
-                .arg(Arg::new("name").required(true).action(ArgAction::Set)),
+            Command::new("switch")
+                .about("Switch branches")
+                .arg(Arg::new("branch").required(true).action(ArgAction::Set)),
         )
         .subcommand(
             Command::new("feat")
@@ -1199,11 +1199,11 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
             let path = sub_matches.get_one::<String>("path").unwrap();
             vcs::restore(&conn, path).map_err(|e| Error::other(e.to_string()))
         }
-        Some(("checkout", sub_matches)) => {
+        Some(("switch", sub_matches)) => {
             let current_dir = current_dir()?;
             let conn =
                 connect_lys(current_dir.as_path()).map_err(|e| Error::other(e.to_string()))?;
-            let name = sub_matches.get_one::<String>("name").unwrap();
+            let name = sub_matches.get_one::<String>("branch").unwrap();
             vcs::checkout(&conn, name).map_err(|e| Error::other(e.to_string()))
         }
         Some(("feat", sub_matches)) => {
@@ -1265,7 +1265,7 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
                 }
             }
         }
-        Some(("sync", args)) => {
+        Some(("backup", args)) => {
             let current_dir = current_dir()?;
             let _conn =
                 connect_lys(current_dir.as_path()).map_err(|e| Error::other(e.to_string()))?;

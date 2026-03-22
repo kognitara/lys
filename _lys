@@ -1,0 +1,92 @@
+#compdef lys
+
+_lys() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    local -a commands=(
+        "init:Initialize the current directory"
+        "new:Create a new lys project"
+        "email:Write and send an email"
+        "web:Run or get web info"
+        "branch:Manage branches"
+        "verify:Check repository integrity and missing blobs"
+        "summary:Show working directory infos"
+        "status:Show changes in working directory"
+        "push:Push local commits to a remote architect"
+        "pull:Pull commits from a remote architect"
+        "prune:Maintain repository health"
+        "shell:Open a temporary shell with the code mounted"
+        "mount:Mount a specific version or the current head"
+        "tree:Show repository structure"
+        "import:Import a Git repository into Lys"
+        "keygen:Generate Ed25519 identity keys"
+        "serve:Start the Silex Node (Daemon)"
+        "audit:Verify integrity of commit signatures"
+        "log:Show commit logs"
+        "diff:Show changes between working tree and last commit"
+        "clone:Clone a Git repository"
+        "health:Check the source code quality/status"
+        "todo:Manage project tasks"
+        "commit:Record changes to the repository"
+        "restore:Discard changes in working directory"
+        "chat:Chat with the team"
+        "sync:Backup repository to a destination"
+        "checkout:Switch branches or restore working tree files"
+        "feat:Manage feature branches"
+        "hotfix:Manage hotfix branches"
+        "tag:Manage version tags"
+        "spotify:Set the Music album/track for the home page"
+        "video:Set the Youtube video banner"
+        "banner:Set the image banner"
+        "help:Print help message"
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[Print help]' \
+        '(-V --version)'{-V,--version}'[Print version]' \
+        '1: :->cmds' \
+        '*:: :->args'
+
+    case $state in
+        cmds)
+            _describe -t commands 'lys commands' commands
+            ;;
+        args)
+            case $line[1] in
+                verify)
+                    _arguments '--deep[Recalculate blake3 checksums]'
+                    ;;
+                serve)
+                    _arguments '-p[Port]:port:_ports'
+                    ;;
+                log)
+                    _arguments \
+                        '-p[Page number]:page:' \
+                        '(-n --limit)'{-n,--limit}'[Limit count]:limit:'
+                    ;;
+                web)
+                    _arguments \
+                        '-p[Port]:port:_ports' \
+                        '--spotify[Spotify URL]' \
+                        '--video[Video URL]' \
+                        '--banner[Banner URL]' \
+                        '--title[Title]' \
+                        '--subtitle[Subtitle]'
+                    ;;
+                todo|feat|hotfix)
+                    _values 'subcommands' start finish add list close
+                    ;;
+                tag)
+                    _values 'subcommands' create list
+                    ;;
+                chat)
+                    _values 'subcommands' send list
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_lys "$@"
+
