@@ -24,8 +24,8 @@ use crossterm::cursor::MoveTo;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
 use dotenv::dotenv;
-use inquire::DateSelect;
 use inquire::{Confirm, Editor, Select, Text};
+use inquire::{DateSelect, Password};
 use sqlite::State;
 use std::env::current_dir;
 use std::fmt::Display;
@@ -64,8 +64,13 @@ fn cli() -> Command {
         .author(env!("CARGO_PKG_AUTHORS"))
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(Command::new("init").about("Initialize the current directory"))
+        .subcommand(Command::new("reinit").about("Re-initialize the current directory"))
         .subcommand(Command::new("new").about("Create a new lys project"))
-        .subcommand(Command::new("email").about("Write and send an email"))
+        .subcommand(Command::new("email").about("Write and send an email").subcommands([
+            Command::new("write").about("Write a new email"),
+            Command::new("configure").about("Create the SMTP settings config file"),
+            Command::new("edit").about("Edit the SMTP settings"),
+        ]))
         .subcommand(
             Command::new("web")
                 .about("Run or get web info")
@@ -422,7 +427,9 @@ fn perform_commit() -> Result<(), Error> {
     let current_dir_str = current_dir.to_str().unwrap();
 
     if !Path::new(".lys").exists() {
-        eprintln!("Error: Not a lys repository. Please run 'lys init' to initialize the repository.");
+        eprintln!(
+            "Error: Not a lys repository. Please run 'lys init' to initialize the repository."
+        );
         exit(1);
     }
 
@@ -809,19 +816,76 @@ fn summary() -> Result<(), Error> {
 pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
     match app.subcommand() {
         Some(("new", _)) => new_project(),
-        Some(("email", _)) => {
-            let mut msg = String::new();
-            let to = ask("To:");
-            let subject = ask("Subject:");
-            while msg.is_empty() {
-                msg.clear();
-                msg = Editor::new("Message:")
-                    .prompt()
-                    .expect("failed to get message");
+        Some(("email", sub)) => match sub.subcommand() {
+            Some(("write", _)) => {
+                loop {
+                    execute!(stdout(), Clear(ClearType::All), MoveTo(0, 0))?;
+                    let mut msg = String::new();
+                    let to = ask("To:");
+                    let subject = ask("Subject:");
+                    while msg.is_empty() {
+                        msg.clear();
+                        msg = Editor::new("Message:")
+                            .prompt()
+                            .expect("failed to get message");
+                    }
+                    if msg.trim().is_empty() {
+                        ko("Message cannot be empty. Please try again.");
+                        continue;
+                    }
+                    if to.trim().is_empty() {
+                        ko("To cannot be empty. Please try again.");
+                        continue;
+                    }
+                    if subject.trim().is_empty() {
+                        ko("Subject cannot be empty. Please try again.");
+                        continue;
+                    }
+                    if let Err(_) = email::send(to.as_str(), subject.as_str(), msg.as_str()) {
+                        ko("Failed to send email");
+                    }
+                    if Confirm::new("Do you want to send another email?")
+                        .with_default(false)
+                        .with_default(false)
+                        .prompt()
+                        .unwrap_or(false)
+                    {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                Ok(())
             }
-            email::send(to.as_str(), subject.as_str(), msg.as_str());
-            Ok(())
-        }
+            Some(("configure", _)) => {
+                let from = ask("From (email):");
+                let username = ask("SMTP Username:");
+                let password = Password::new("SMTP Password:")
+                    .prompt()
+                    .expect("failed to get password");
+                let transport = ask("SMTP Transport (e.g., smtp.gmail.com:587):");
+                let port = ask("SMTP Port (e.g., 587):")
+                    .parse::<u16>()
+                    .expect("failed to parse port");
+                email::create_smtp_config(
+                    from.as_str(),
+                    username.as_str(),
+                    password.as_str(),
+                    transport.as_str(),
+                    port,
+                )
+                .expect("failed to configure email");
+                Ok(())
+            }
+            Some(("edit", _)) => {
+                email::edit_smtp_config().expect("failed to edit smtp config");
+                Ok(())
+            }
+            _ => {
+                ko("Invalid email subcommand. Use 'write', 'configure', or 'edit'.");
+                Ok(())
+            }
+        },
 
         Some(("verify", args)) => {
             let deep = args.get_flag("deep"); // On récupère le flag
