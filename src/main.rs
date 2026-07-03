@@ -404,6 +404,7 @@ fn cli() -> Command {
                         .arg(
                             Arg::new("message")
                                 .short('m')
+                                .required(true)
                                 .help("Description")
                                 .action(ArgAction::Set),
                         ),
