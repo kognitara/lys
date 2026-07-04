@@ -1,10 +1,10 @@
 [package]
-name = "lys"
-version = "0.2.0"
+name = "awq"
+version = "0.0.0"
 edition = "2024"
 description = "A modern vcs"
 authors = ["Saigo Ekitae"]
-repository = "https://github.com/hackia/lys/tree/main/lys"
+repository = "https://github.com/kognitara/awq"
 license = "AGPL-3.0"
 readme = "README.md"
 categories = ["development-tools"]
