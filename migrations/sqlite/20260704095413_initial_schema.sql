@@ -1,0 +1,85 @@
+-- SQLite Schema
+CREATE TABLE IF NOT EXISTS nodes (
+    parent_hash TEXT,
+    name TEXT,
+    hash TEXT,
+    mode INTEGER,
+    size INTEGER,
+    env_hash TEXT,
+    PRIMARY KEY (parent_hash, name)
+);
+
+CREATE TABLE IF NOT EXISTS blobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hash TEXT UNIQUE NOT NULL,
+    content BLOB,
+    size INTEGER NOT NULL,
+    mime_type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uuid TEXT UNIQUE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS commits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hash TEXT UNIQUE NOT NULL,
+    parent_hash TEXT,
+    tree_hash TEXT NOT NULL,
+    author TEXT NOT NULL,
+    message TEXT NOT NULL,
+    ticket TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    signature TEXT,
+    env_hash TEXT
+);
+
+CREATE TABLE IF NOT EXISTS contributors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    role TEXT NOT NULL DEFAULT 'contributor'
+);
+
+CREATE TABLE IF NOT EXISTS logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    state TEXT NOT NULL, -- SQLite utilise TEXT pour stocker le JSON
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS branches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    head_id INTEGER NOT NULL,
+    FOREIGN KEY (head_id) REFERENCES commits(id)
+);
+
+CREATE TABLE IF NOT EXISTS manifest (
+    commit_id INTEGER NOT NULL,
+    asset_id INTEGER NOT NULL,
+    blob_id INTEGER NOT NULL,
+    path TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS config (
+    key_name TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version TEXT NOT NULL UNIQUE,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

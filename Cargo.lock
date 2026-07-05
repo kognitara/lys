@@ -118,6 +118,53 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "awq"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "blake3",
+ "chrono",
+ "clap",
+ "content_inspector",
+ "crossterm 0.29.0",
+ "dashmap",
+ "dotenvy",
+ "ed25519-dalek",
+ "flate2",
+ "git2",
+ "glob",
+ "hex",
+ "ignore",
+ "indicatif",
+ "inquire",
+ "justify",
+ "lettre",
+ "nix",
+ "once_cell",
+ "pulldown-cmark",
+ "qr2term",
+ "rand 0.8.6",
+ "rand_core 0.10.1",
+ "rayon",
+ "reqwest",
+ "rustyline",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "shlex",
+ "similar",
+ "sqlite",
+ "tabled",
+ "tar",
+ "tempfile",
+ "tokio",
+ "tower-http 0.7.0",
+ "uuid",
+ "zstd",
+]
+
+[[package]]
 name = "aws-lc-rs"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1527,53 +1574,6 @@ name = "lru-slab"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
-
-[[package]]
-name = "lys"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "axum",
- "blake3",
- "chrono",
- "clap",
- "content_inspector",
- "crossterm 0.29.0",
- "dashmap",
- "dotenvy",
- "ed25519-dalek",
- "flate2",
- "git2",
- "glob",
- "hex",
- "ignore",
- "indicatif",
- "inquire",
- "justify",
- "lettre",
- "nix",
- "once_cell",
- "pulldown-cmark",
- "qr2term",
- "rand 0.8.6",
- "rand_core 0.10.1",
- "rayon",
- "reqwest",
- "rustyline",
- "serde",
- "serde_json",
- "serde_yaml",
- "shlex",
- "similar",
- "sqlite",
- "tabled",
- "tar",
- "tempfile",
- "tokio",
- "tower-http 0.7.0",
- "uuid",
- "zstd",
-]
 
 [[package]]
 name = "matchit"

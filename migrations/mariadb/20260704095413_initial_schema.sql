@@ -1,0 +1,85 @@
+-- Structure simplifiée pour Lys VCS
+CREATE TABLE IF NOT EXISTS nodes (
+    parent_hash VARCHAR(255),
+    name VARCHAR(255),
+    hash VARCHAR(255),
+    mode INT,
+    size BIGINT,
+    env_hash VARCHAR(255),
+    PRIMARY KEY (parent_hash, name)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS blobs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hash VARCHAR(255) UNIQUE NOT NULL,
+    content LONGBLOB,
+    size BIGINT NOT NULL,
+    mime_type VARCHAR(100)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS assets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) UNIQUE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS commits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hash VARCHAR(255) UNIQUE NOT NULL,
+    parent_hash VARCHAR(255),
+    tree_hash VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    ticket VARCHAR(255) NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    signature TEXT,
+    env_hash VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS contributors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role ENUM('maintener', 'contributor', 'tester', 'documentalist', 'ambasador') NOT NULL DEFAULT 'contributor'
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(100) NOT NULL,
+    state JSON NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS branches (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    head_id INT NOT NULL,
+    FOREIGN KEY (head_id) REFERENCES commits(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS manifest (
+    commit_id INT NOT NULL,
+    asset_id INT NOT NULL,
+    blob_id INT NOT NULL,
+    path TEXT NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS config (
+    key_name VARCHAR(255) PRIMARY KEY,
+    value TEXT NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS tags (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    version VARCHAR(50) NOT NULL UNIQUE,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
