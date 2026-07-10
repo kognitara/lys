@@ -122,7 +122,9 @@ pub const LYS_INIT: &str = "CREATE TABLE IF NOT EXISTS tree_nodes (
         message TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP -- Ajouté pour le tri
     );
-    INSERT OR IGNORE INTO config (key, value) VALUES ('current_branch', 'main');";
+    INSERT OR IGNORE INTO config (key, value) VALUES ('current_branch', 'main');
+    CREATE INDEX IF NOT EXISTS idx_commits_timestamp ON commits(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_tree_nodes_hash ON tree_nodes(hash);";
 
 #[derive(Default)]
 pub struct CommitQuery {

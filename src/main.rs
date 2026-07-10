@@ -1194,18 +1194,8 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
                 ok_merkle_hash(root_hash.as_str());
                 let lines = vcs::ls_tree(&conn, &root_hash, "", head_commit_id)
                     .map_err(|e| Error::other(e.to_string()))?;
-
-                if let Some(mut child) = vcs::start_pager() {
-                    if let Some(mut stdin) = child.stdin.take() {
-                        let output = lines.join("\n");
-                        let _ = stdin.write_all(output.as_bytes());
-                        drop(stdin);
-                        let _ = child.wait();
-                    } else {
-                        println!("{}", lines.join("\n"));
-                    }
-                } else {
-                    println!("{}", lines.join("\n"));
+                for line in &lines {
+                    println!("{line}");
                 }
             } else {
                 ok("repository empty. Commit something first!");

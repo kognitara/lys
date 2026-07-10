@@ -13,9 +13,11 @@ use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{Event, KeyCode, read};
 use crossterm::execute;
 use crossterm::style::Print;
+use crossterm::style::Stylize;
 use crossterm::terminal::{
     Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
+use devicons::FileIcon;
 use glob::GlobError;
 use glob::glob;
 use ignore::DirEntry;
@@ -36,6 +38,7 @@ use std::io::{Error as IoError, stdout};
 use std::io::{Read, Result as IoResult};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+use std::path::MAIN_SEPARATOR_STR;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
@@ -366,13 +369,15 @@ fn ls_tree_recursive(
     until_commit_id: i64,
     lines: &mut Vec<String>,
 ) -> Result<(), Error> {
-    // On récupère tous les enfants directs de ce hash de dossier
-    let query =
-        "SELECT name, hash, mode FROM tree_nodes WHERE parent_tree_hash = ? ORDER BY name ASC";
-    let mut stmt = conn.prepare(query)?;
+    let mut stmt = conn.prepare(
+        "
+        SELECT t.name, t.hash, c.message, c.timestamp 
+        FROM tree_nodes t
+        LEFT JOIN commits c ON c.tree_hash = t.hash
+        WHERE t.parent_tree_hash = ?1
+    ",
+    )?;
     stmt.bind((1, tree_hash))?;
-
-    // On stocke les résultats pour gérer la récursion après l'affichage
     let mut entries = Vec::new();
     while let Ok(State::Row) = stmt.next() {
         entries.push((
@@ -381,22 +386,33 @@ fn ls_tree_recursive(
             stmt.read::<i64, _>("mode")?,
         ));
     }
+    entries.sort_by(|a, b| {
+        let a_is_dir = is_directory(conn, &a.1).unwrap_or(false);
+        let b_is_dir = is_directory(conn, &b.1).unwrap_or(false);
 
+        if a_is_dir == b_is_dir {
+            // Si même type, on trie par nom alphabétique
+            a.0.cmp(&b.0)
+        } else {
+            // true (dossier) > false (fichier), donc les dossiers arrivent en premier en mode DESC
+            b_is_dir.cmp(&a_is_dir)
+        }
+    });
     let count = entries.len();
     for (i, (name, hash, _mode)) in entries.into_iter().enumerate() {
         let is_last = i == count - 1;
         let connector = if is_last { "└── " } else { "├── " };
-        let full_path = if current_path.is_empty() {
-            name.clone()
+        let is_dir = is_directory(conn, &hash)?;
+        let current_path = if current_path.is_empty() {
+            name.to_string()
         } else {
-            format!("{}/{}", current_path, name)
+            format!("{current_path}{MAIN_SEPARATOR_STR}{name}")
         };
 
-        let is_dir = is_directory(conn, &hash)?;
         let mut commit_info = String::new();
         let mut commit_hash_str = "       ".to_string(); // 7 spaces placeholder
         if let Some((h, ts, msg)) =
-            last_commit_for_path_cli(conn, &full_path, is_dir, until_commit_id)
+            last_commit_for_path_cli(conn, current_path.as_str(), is_dir, until_commit_id)
         {
             commit_hash_str = h[0..7].to_string();
             let age = time_ago_cli(&ts);
@@ -407,25 +423,41 @@ fn ls_tree_recursive(
             };
             commit_info = format!(" {truncated_msg} ({age})");
         }
-
+        let icon = FileIcon::from(current_path.as_str());
         lines.push(format!(
-            "{} [ {} ] [ {} ] {}{}{}{}",
-            if is_dir { "d" } else { "f" },
-            &hash[0..7],
-            commit_hash_str,
-            prefix,
-            connector,
-            name,
-            commit_info,
+            "  {}  [ {} ] [ {} ] {} {}{} {}{}",
+            if is_dir {
+                "d".white().bold()
+            } else {
+                "f".white().bold()
+            },
+            &hash[0..7].green(),
+            commit_hash_str.yellow(),
+            prefix.white(),
+            connector.white(),
+            icon.icon.to_string().white(),
+            if is_dir {
+                name.clone().blue().to_string()
+            } else {
+                name.clone().dark_cyan().to_string()
+            },
+            commit_info.dark_grey(),
         ));
         // Si le hash possède lui-même des enfants dans tree_nodes, c'est un dossier
         if is_dir {
             let new_prefix = if is_last {
                 format!("{}    ", prefix)
             } else {
-                format!("{}│   ", prefix)
+                format!("{} │   ", prefix)
             };
-            ls_tree_recursive(conn, &hash, &new_prefix, &full_path, until_commit_id, lines)?;
+            ls_tree_recursive(
+                conn,
+                &hash,
+                &new_prefix,
+                current_path.as_str(),
+                until_commit_id,
+                lines,
+            )?;
         }
     }
     Ok(())
@@ -1597,7 +1629,7 @@ pub fn start_pager() -> Option<std::process::Child> {
             // Dans le web terminal, on veut que less sorte immédiatement s'il n'y a qu'une page
             // et qu'il ne tente pas d'interagir avec le TTY.
             // On peut aussi essayer de passer des options pour qu'il se comporte comme un filtre.
-            cmd.arg("-F").arg("-X").arg("-R");
+            cmd.arg("-R").arg("-r").arg("-F").arg("-X");
         } else {
             cmd.arg("-F").arg("-X").arg("-R");
         }

@@ -129,6 +129,7 @@ dependencies = [
  "content_inspector",
  "crossterm",
  "dashmap",
+ "devicons",
  "dotenvy",
  "ed25519-dalek",
  "flate2",
@@ -643,6 +644,15 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn",
+]
+
+[[package]]
+name = "devicons"
+version = "0.6.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "830e47e2f330cf4fdd5a958dcef921b9523ffc21ab6713aa5e77ba2cce03904b"
+dependencies = [
+ "lazy_static",
 ]
 
 [[package]]
@@ -1458,6 +1468,12 @@ checksum = "47c5ded196ad94b6fd5822028d7e187dbbe9e849404fb989bf5e226cb9853017"
 dependencies = [
  "unicode-width 0.1.14",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lettre"

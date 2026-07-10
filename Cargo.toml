@@ -49,6 +49,7 @@ flate2 = "1.1.9"
 justify = { version = "0.1.3", features = ["unicode-width"] }
 dotenvy = "0.15.7"
 strip-ansi-escapes = "0.2.1"
+devicons = "0.6.12"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.1", features = [

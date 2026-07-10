@@ -65,17 +65,11 @@ pub fn get_branch_infos(
     }
 }
 pub fn ok_merkle_hash(h: &str) {
-    let x = term_width();
-
-    let padding = x.saturating_sub(h.chars().count() as u16 + 7);
-    let _ = execute!(
-        stdout(),
-        Print("m"),
-        Print(" ".repeat(padding as usize)),
-        Print(" [ "),
-        Print(h),
-        Print(" ]\n")
-    );
+    let hash = &h[0..7].green().to_string();
+    let m = "  m  ".dark_yellow().to_string();
+    let a = "[ ".white().bold().to_string();
+    let b = " ]\n".white().bold().to_string();
+    let _ = execute!(stdout(), Print(m), Print(a), Print(hash), Print(b));
 }
 
 pub fn ko(description: &str) {
