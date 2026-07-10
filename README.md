@@ -4,66 +4,80 @@
 
 [![Rust](https://github.com/kognitara/awq/actions/workflows/rust.yml/badge.svg)](https://github.com/kognitara/awq/actions/workflows/rust.yml)
 
-## The AWQ Commit Philosophy: A Developer's Guide
+# AWQ (Advanced Workspace & Query)
 
-Welcome to the AWQ version control system.
+**AWQ** (formerly known as *Lys*) is a next-generation, SQLite-backed Version Control System (VCS) and project management workspace written in Rust.
 
-Unlike traditional VCS workflows that allow quick, one-line commit messages, AWQ introduces intentional friction into the commit process. We believe that while your code tells the machine *what* to do, your commit history must tell future engineers *why* it was done. A commit is not just a save point; it is architectural documentation.
+Unlike traditional VCS tools that rely heavily on flat files, AWQ leverages the power of relational databases (SQLite) and cryptographic hashing (Blake3) to provide an immutable, lightning-fast, and verifiable Merkle tree of your project's history. It seamlessly integrates version control, task management (todos), team communication (chat), and web serving into a single unified CLI.
 
-When you run `awq commit`, you will be guided through a series of prompts. Here is how to answer them effectively:
+## Key Features
 
-### 1. The Ticket (To-Do Resolution)
+* **Relational VCS Engine:** Blobs, commits, and trees are stored as zlib-compressed data within an embedded SQLite database (`.lys/db/store.db`). This allows for complex historical queries in milliseconds.
+* **Cryptographic Integrity:** Powered by **Blake3**, AWQ provides extreme performance for calculating file hashes and building the Merkle Tree root. Every commit is cryptographically signed (Ed25519) to ensure total auditability.
+* **Interactive TUI & Visual Logs:** Say goodbye to dry terminal outputs. AWQ features a rich, colorful, and heavily icon-driven interface. Commands like `awq tree` and `awq log` offer paginated, highly readable views of your project's state.
+* **Space-Themed Commit Semantics:** Committing code is guided through an interactive prompt categorizing changes into logical "Space" themes (e.g., *Star* for features, *Comet* for bug fixes, *Nebula* for refactors) enforcing a clean and readable project history.
+* **Git Interoperability:** Need to work with the outside world? AWQ can clone, pull, and push to remote Git repositories natively while maintaining its own SQLite-based state.
+* **Virtual Mounting:** Temporarily mount any specific commit or branch to a local directory (`awq mount`) or drop into an ephemeral shell to test an old state (`awq shell`), without altering your current working directory.
+* **Built-in Workspace Tools:** Manage your tasks (`awq todo`), communicate with collaborators (`awq chat`, `awq email`), or instantly scaffold new projects in 10+ languages (`awq new`).
 
-AWQ bridges the gap between project management and version control. Before categorizing your work, you must link the commit to an existing To-Do item.
+## Installation
 
-* **Rule:** You cannot commit "floating" code. Every change must resolve or contribute to an identified task, bug, or feature in the local database.
+Ensure you have the Rust toolchain installed. Clone the repository and build from source:
 
-### 2. The Category & Space Taxonomy
+```bash
+cargo install awq
+```
 
-AWQ uses a unique astronomical taxonomy to categorize changes instantly. Choose the event that best matches your work:
+* Note: AWQ requires a terminal with Nerd Fonts installed (e.g., JetBrainsMono Nerd Font) to correctly render the UI icons.*
 
-* **Big Bang:** Initializing a new repository or major architectural scaffolding.
-* **Star:** Adding or refining a shiny new feature.
-* **Asteroid Belt:** Sweeping up, code cleanup, and general maintenance.
-* **Quantum Fluctuation:** Tiny, unpredictable, but necessary modifications (e.g., typos, comments).
-* *(Select the one that best fits the scale and intent of your change).*
+## Quick Start
 
-### 3. The Summary (Git Compatibility)
+### 1. Initialize a new project
 
-Because AWQ seamlessly syncs with standard Git objects, your summary must respect standard Git conventions.
+You can either initialize an existing directory or use the scaffolding tool to create a new one:
 
-* **Rule:** Keep it under 50 characters. Use an imperative action verb.
-* **Bad:** `fixed the padding issue on the cli`
-* **Good:** `Enforce 7-character padding on CLI output`
+```bash
+# Scaffold a new project (Rust, Python, C, C++, JS, etc.)
+awq new
 
-### 4. What? (The Objective)
+# OR Initialize an existing directory
+awq init
+```
 
-Define the exact scope of your modification without diving into the code itself.
+### 2. Make your first commit
 
-* **Formula:** Action verb + Target Component.
-* **Example:** "Implement automatic Git synchronization and route standard hook outputs to `/dev/null`."
+AWQ uses an interactive prompt to guide you through creating highly structured commit messages.
 
-### 5. Why? (The Architectural Intent)
+```bash
+awq commit
+```
 
-This is the most critical field. Code cannot explain business logic, future-proofing, or avoided technical debt. Answer this question: *What fails or becomes painful if this commit does not exist?*
+You will be prompted to select a category, a ticket/todo, and provide a summary of *What*, *Why*, and *How* you made the changes.
 
-* **Example:** "Maintaining interoperability with standard Git tooling is critical for external CI/CD pipelines. Silencing hooks prevents terminal visual pollution."
+### 3. Explore your repository
 
-### 6. How? (The Mechanics)
+Visualize your current working directory, including the Merkle Root Hash and the last commit for every file:
 
-Provide a high-level summary of the execution strategy. Save the reviewer from reading a 500-line diff to understand your approach.
+```bash
+awq tree
+```
 
-* **Formula:** I used [Tool/Logic/Crate] to modify [Target].
-* **Example:** "Integrated the `git2` crate to mirror AWQ index states. Updated format macros using `{:^7}`."
+View the detailed, paginated commit history with line addition/deletion statistics:
 
-### 7. Outcome (The Immediate Result)
+```bash
+awq log
+```
 
-State the concrete benefit of this code being merged right now.
+## Architecture
 
-* **Example:** "A cleaner, Unix-style aligned terminal interface and a robust dual-write version control workflow."
+AWQ uses a 3-tier hash system displayed natively in the UI:
 
-### 8. Breaking Changes?
+1. **Merkle Root Hash:** The global fingerprint of the entire repository at a given state.
+2. **Commit Hash:** The unique identifier of the historical event (Author, Date, Message, Parent).
+3. **Blob Hash:** The Blake3 hash of the actual file content, guaranteeing data integrity.
 
-Be explicit. If this change requires downstream users or other developers to update their configurations, list those requirements here. If not, a simple "None." is perfect.
+Because AWQ is backed by SQLite, features like `awq prune` (cleaning old history to reclaim disk space) or querying specific file states across thousands of commits are heavily optimized and native.
 
-**Remember:** Take your time. A well-crafted AWQ commit preserves the historical context of the project forever.
+## Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
