@@ -1,6 +1,6 @@
-#compdef lys
+#compdef awq
 
-_lys() {
+_awq() {
     local context state state_descr line
     typeset -A opt_args
 
@@ -88,5 +88,5 @@ _lys() {
     esac
 }
 
-_lys "$@"
+_awq "$@"
 
