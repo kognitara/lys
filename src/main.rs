@@ -1457,15 +1457,23 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
                         return Ok(());
                     }
 
+                    let mut title: String = String::new();
+                    let mut description: String = String::new();
                     // Fallback to interactive mode when no title arg
+                    let conn =
+                        connect_lys(Path::new(".")).expect("failed to connect to the database");
                     loop {
                         execute!(stdout(), Clear(ClearType::All), MoveTo(0, 0))?;
-                        let title = Text::new("Title:").prompt().expect("failed to get title");
-                        let description = Editor::new("Description:")
-                            .prompt()
-                            .expect("failed to get todo description");
-                        let conn =
-                            connect_lys(Path::new(".")).expect("faield to cconnect to the db");
+                        while title.is_empty() {
+                            title.clear();
+                            title = Text::new("Title:").prompt().expect("failed to get title");
+                        }
+                        while description.is_empty() {
+                            description.clear();
+                            description = Editor::new("Description:")
+                                .prompt()
+                                .expect("failed to get description");
+                        }
                         let users = vec![env!("USER")];
                         let user = Select::new("Assign to:", users)
                             .prompt()
@@ -1482,10 +1490,10 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
                             date.to_string().as_str(),
                         )
                         .is_ok()
-                            && Confirm::new("add an other todo?")
-                                .with_default(true)
+                            && Confirm::new("Add an other todo?")
+                                .with_default(false)
                                 .prompt()
-                                .expect("value is required")
+                                .unwrap_or_default()
                                 .eq(&false)
                         {
                             ok("bye");
@@ -1503,9 +1511,14 @@ pub fn execute_matches(app: clap::ArgMatches) -> Result<(), Error> {
                     todo::list_todos(&conn).map_err(|e| Error::other(e.to_string()))
                 }
                 Some(("close", args)) => {
-                    let id = args.get_one::<i64>("id").unwrap();
-                    todo::complete_todo(&conn, *id).expect("failed to complete todo");
-                    Ok(())
+                    if Path::new(".git").is_dir() {
+                        ok("Use a commit to close the issue");
+                        Ok(())
+                    } else {
+                        let id = args.get_one::<i64>("id").unwrap();
+                        todo::complete_todo(&conn, *id).expect("failed to complete todo");
+                        Ok(())
+                    }
                 }
                 _ => Ok(()),
             }
