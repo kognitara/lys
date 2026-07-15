@@ -1,0 +1,20 @@
+[
+  {
+    "name": "D Lint",
+    "trigger": "pre-commit",
+    "command": "dub lint",
+    "is_active": true
+  },
+  {
+    "name": "D Test",
+    "trigger": "pre-commit",
+    "command": "dub test",
+    "is_active": true
+  },
+  {
+    "name": "D build",
+    "trigger": "pre-commit",
+    "command": "dub build",
+    "is_active": true
+  }
+]

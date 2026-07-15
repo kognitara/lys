@@ -1,3 +1,5 @@
 .env
 target
 .lys/
+awq_hooks.json
+.awq/

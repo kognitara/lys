@@ -1,0 +1,20 @@
+[
+  {
+    "name": "PHP Syntax Check",
+    "trigger": "pre-commit",
+    "command": "for file in $(find . -name '*.php'); do php -l $file || exit 1; done",
+    "is_active": true
+  },
+  {
+    "name": "PHPStan (Strict Analysis)",
+    "trigger": "pre-commit",
+    "command": "vendor/bin/phpstan analyse",
+    "is_active": true
+  },
+  {
+    "name": "PHPUnit",
+    "trigger": "pre-commit",
+    "command": "vendor/bin/phpunit",
+    "is_active": true
+  }
+]

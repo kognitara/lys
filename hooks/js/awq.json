@@ -1,0 +1,14 @@
+[
+  {
+    "name": "JS Format (Prettier)",
+    "trigger": "pre-commit",
+    "command": "npx prettier --check .",
+    "is_active": true
+  },
+  {
+    "name": "JS Lint (ESLint)",
+    "trigger": "pre-commit",
+    "command": "npx eslint .",
+    "is_active": true
+  }
+]

@@ -1,22 +1,46 @@
 use crate::vcs::{FileStatus, time_ago_cli};
+use crossterm::execute;
+use crossterm::style::{Print, Stylize};
 use crossterm::{
     execute,
     style::{Print, Stylize},
     terminal::size,
 };
+use fluent_templates::{FluentValue, Loader};
 use sqlite::Connection;
 use sqlite::Error;
 use sqlite::State;
+use std::collections::HashMap;
+use std::io::stdout;
 use std::io::stdout;
 use std::path::Path;
 use std::process::Command;
 use std::{fs::read_to_string, process::Stdio};
+use unic_langid::LanguageIdentifier;
 
-pub fn ok(description: &str) {
+fluent_messages! {
+    crate::LOCALES {
+        locales: "./locales",
+        fallback_language: "en-US",
+    }
+}
+pub fn tt(
+    lang: &LanguageIdentifier,
+    key: &str,
+    args: Option<HashMap<String, fluent_templates::FluentValue>>,
+) -> String {
+    LOCALES
+        .lookup_with_args(lang, key, &args.unwrap_or_default())
+        .unwrap_or_else(|| key.to_string())
+}
+pub fn ok(
+    lang: &LanguageIdentifier,
+    key: &str,
+    args: Option<HashMap<String, fluent_templates::FluentValue>>,
+) {
     let x = term_width();
-
-    // 1. Calcul de la largeur réelle des caractères UTF-8
-    let desc_width = description.chars().count();
+    let desc = tt(lang, key, args);
+    let desc_width = desc.chars().count();
 
     // 2. Définition des symboles et labels
     let icon = " * "; // Symbole UTF-8 (Checkmark)
@@ -31,12 +55,41 @@ pub fn ok(description: &str) {
         stdout(),
         // Icône en vert brillant
         Print(icon.green().bold()),
-        Print(description),
+        Print(desc),
         // Remplissage dynamique
         Print(" ".repeat(padding as usize)),
         // Bloc de statut avec délimiteurs UTF-8
         Print(brackets.0.white().bold()),
         Print(status_label.green().bold()),
+        Print(brackets.1.trim_end().white().bold()),
+        Print("\n"),
+    );
+}
+
+pub fn ko(lang: &LanguageIdentifier, key: &str, arg: Option<HashMap<String, FluentValue>>) {
+    let x = term_width();
+    let desc = tt(lang, key, args);
+    let desc_width = desc.chars().count();
+
+    // 2. Définition des symboles et labels
+    let icon = " ! "; // Symbole UTF-8 (Checkmark)
+    let status_label = "failure";
+    let brackets = (" [ ", " ] "); // Délimiteurs UTF-8 élégants
+
+    // 3. Calcul du padding sécurisé
+    // On retire la largeur de l'icone (3), du label (7), des brackets (6) et des espaces
+    let occupied_width = (desc_width + 15) as u16;
+    let padding = x.saturating_sub(occupied_width);
+    let _ = execute!(
+        stdout(),
+        // Icône en vert brillant
+        Print(icon.green().bold()),
+        Print(desc),
+        // Remplissage dynamique
+        Print(" ".repeat(padding as usize)),
+        // Bloc de statut avec délimiteurs UTF-8
+        Print(brackets.0.white().bold()),
+        Print(status_label.red().bold()),
         Print(brackets.1.trim_end().white().bold()),
         Print("\n"),
     );
@@ -64,35 +117,14 @@ pub fn get_branch_infos(
         Ok(None)
     }
 }
-pub fn ok_merkle_hash(h: &str) {
-    let hash = &h[0..7].green().to_string();
+pub fn ok_merkle_hash(merkle_hash: &str) {
+    let hash = &merkle_hash[0..7].green().to_string();
     let m = "  m  ".white().bold().to_string();
     let a = "[ ".white().bold().to_string();
     let b = " ]\n".white().bold().to_string();
     let _ = execute!(stdout(), Print(m), Print(a), Print(hash), Print(b));
 }
 
-pub fn ko(description: &str) {
-    let x = term_width();
-    // 1. Calcul de la largeur réelle des caractères UTF-8
-    let desc_width = description.chars().count();
-
-    // 3. Calcul du padding sécurisé
-    // On retire la largeur de l'icone (3), du label (2), des brackets (6) et des espaces
-
-    let occupied_width = (desc_width + 15) as u16;
-    let padding = x.saturating_sub(occupied_width);
-    let _ = execute!(
-        stdout(),
-        Print(" ! ".red().bold()),
-        Print(description),
-        Print(" ".repeat(padding as usize)),
-        Print(" [ ".white().bold()),
-        Print("failure".red().bold()),
-        Print(" ]\n".trim_end().white().bold()),
-        Print("\n"),
-    );
-}
 pub fn ok_status(verb: &FileStatus) {
     let (p, symbol) = match verb {
         FileStatus::Modified(p, _) => (p.display().to_string(), String::from(" ~ ")),
@@ -154,17 +186,18 @@ pub fn ok_tag(tag: &str, description: &str, date: &str, hash: &str) {
     );
 }
 
-pub fn ok_audit_commit(hash: &str) {
+pub fn ok_audit_commit(lang: &LanguageIdentifier, hash: &str) {
     let x = term_width();
 
-    let description = " Signature is valid ";
-    let padding =
-        x.saturating_sub(hash.chars().count() as u16 + description.chars().count() as u16 + 7);
+    let mut args = HashMap::new();
+    args.insert("hash".to_string(), &hash[0..7].into());
+    let y = tt(lang, "signature-is-valid", args);
+    let padding = x.saturating_sub(hash.chars().count() as u16 + y.chars().count() as u16 + 7);
 
     let _ = execute!(
         stdout(),
-        Print(" *".green().bold()),
-        Print(description),
+        Print(" * ".green().bold()),
+        Print(y),
         Print(" ".repeat(padding as usize)),
         Print(" [ ".white().bold()),
         Print(hash.green().bold()),
@@ -173,11 +206,12 @@ pub fn ok_audit_commit(hash: &str) {
     );
 }
 
-pub fn ko_verify(path: &str, hash: &str) {
+pub fn ko_verify(lang: &LanguageIdentifier, path: &str, hash: &str) {
     let x = term_width();
-
-    let description =
-        format!("The fingerprint of the file '{path}' does not corresponds to the Merkle tree.");
+    let mut args: HashMap<String, FluentValue> = HashMap::new();
+    args.insert("path".to_string(), path.into());
+    args.insert("hash".to_string(), &hash[0..7].into());
+    let description = tt(lang, "fingerprint-not-valid", args);
     let padding =
         x.saturating_sub(hash.chars().count() as u16 + description.chars().count() as u16 + 8);
 

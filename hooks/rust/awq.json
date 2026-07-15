@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Rust Format (Strict)",
+    "trigger": "pre-commit",
+    "command": "cargo fmt -- --check",
+    "is_active": true
+  },
+  {
+    "name": "Rust Clippy (Zero Tolerance)",
+    "trigger": "pre-commit",
+    "command": "cargo clippy -- -D warnings",
+    "is_active": true
+  },
+  {
+    "name": "Rust Security Audit",
+    "trigger": "pre-push",
+    "command": "cargo audit",
+    "is_active": true
+  },
+  {
+    "name": "Run All Tests (Strict)",
+    "trigger": "pre-push",
+    "command": "cargo test --all-features",
+    "is_active": true
+  }
+]

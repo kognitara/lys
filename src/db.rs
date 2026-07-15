@@ -1,5 +1,6 @@
 use chrono::{Datelike, Local};
 use sqlite::{Connection, Error, State};
+use std::env::current_dir;
 use std::fmt::Display;
 use std::fs::create_dir_all;
 use std::path::Path;
@@ -10,121 +11,6 @@ use crate::utils::ko_verify;
 use crate::utils::missing_verify;
 use crate::utils::ok;
 use crate::utils::ok_verify;
-
-pub const LYS_INIT: &str = "CREATE TABLE IF NOT EXISTS tree_nodes (
-        parent_tree_hash TEXT,
-        name TEXT,
-        hash TEXT,
-        mode INTEGER,
-        size INTEGER,
-        nix_env_hash TEXT,
-        PRIMARY KEY (parent_tree_hash, name)
-    ) WITHOUT ROWID;
-    CREATE INDEX IF NOT EXISTS idx_tree_nodes_parent ON tree_nodes(parent_tree_hash);
-
-    CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    status TEXT DEFAULT 'TODO',
-    assigned_to TEXT,
-    due_date DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP -- Ajouté pour le tri
-);   
-    -- ====================================================================
-    -- PARTIE 1 : STOCKAGE ADRESSABLE (store.db)
-    -- ====================================================================
-    CREATE TABLE IF NOT EXISTS store.blobs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hash TEXT UNIQUE NOT NULL,      -- Hash Blake3
-        content BLOB,                   -- Compressé en Zlib côté Rust
-        size INTEGER NOT NULL,
-        mime_type TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS store.assets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        uuid TEXT UNIQUE NOT NULL,      -- Identité stable (UUID)
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- ====================================================================
-    -- PARTIE 2 : INDEXATION HIÉRARCHIQUE (VFS Optimized)
-    -- remplace le manifest à plat pour permettre le montage performant
-    -- ====================================================================
-
-    -- ====================================================================
-    -- PARTIE 3 : HISTORIQUE ET ÉVOLUTION
-    -- ====================================================================
-    CREATE TABLE IF NOT EXISTS commits (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hash TEXT UNIQUE NOT NULL,       -- Merkle Root
-        parent_hash TEXT,
-        tree_hash TEXT NOT NULL,         -- Hash du 'tree' racine du commit
-        author TEXT NOT NULL,
-        message TEXT NOT NULL,
-        ticket TEXT NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        signature TEXT,
-        nix_env_hash TEXT
-     );
-     
-     CREATE TABLE IF NOT EXISTS contributors (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        role TEXT NOT NULL DEFAULT 'developer' CHECK(role in ('maintener', 'contributor', 'tester', 'documentalist', 'ambasador'))
-    );
-    CREATE INDEX IF NOT EXISTS idx_commits_timestamp ON commits(timestamp);
-    CREATE INDEX IF NOT EXISTS idx_commits_hash ON commits(hash);
-
-    -- Journal d'opérations (Style Jujutsu) pour le Undo/Redo
-    CREATE TABLE IF NOT EXISTS operations_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        operation_type TEXT NOT NULL,    -- 'commit', 'checkout', 'reset'
-        view_state JSON NOT NULL,        -- État complet des refs au moment T
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS branches (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        head_commit_id INTEGER NOT NULL,
-        FOREIGN KEY (head_commit_id) REFERENCES commits(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS manifest (
-        commit_id INTEGER NOT NULL,
-        asset_id INTEGER NOT NULL,
-        blob_id INTEGER NOT NULL,
-        file_path TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_manifest_commit ON manifest(commit_id);
-    CREATE INDEX IF NOT EXISTS idx_manifest_path ON manifest(file_path);
-
-    -- ====================================================================
-    -- PARTIE 4 : OUTILS COLLABORATIFS ET SYSTÈME
-    -- ====================================================================
-    CREATE TABLE IF NOT EXISTS ephemeral_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        expires_at DATETIME NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS config (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        version TEXT NOT NULL UNIQUE,
-        message TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP -- Ajouté pour le tri
-    );
-    INSERT OR IGNORE INTO config (key, value) VALUES ('current_branch', 'main');
-    CREATE INDEX IF NOT EXISTS idx_commits_timestamp ON commits(timestamp);
-    CREATE INDEX IF NOT EXISTS idx_tree_nodes_hash ON tree_nodes(hash);";
 
 #[derive(Default)]
 pub struct CommitQuery {
@@ -573,8 +459,9 @@ pub fn verify(conn: &Connection, deep: bool) -> Result<(), Box<dyn std::error::E
     }
     Ok(())
 }
-pub fn connect_lys(root_path: &Path) -> Result<Connection, Error> {
-    let db_dir = root_path.join(".lys/db");
+pub fn connect_awq() -> Result<Connection, Error> {
+    let root_path = current_dir()?;
+    let db_dir = root_path.join(".awq/db");
     let store_path = db_dir.join("store.db");
 
     let s = Season::current();
@@ -585,6 +472,8 @@ pub fn connect_lys(root_path: &Path) -> Result<Connection, Error> {
     if std::env::var("LYS_SHELL").is_err() {
         create_dir_all(&history_dir).expect("failed to create the .lys/db directory");
     }
+
+    sqlx::migrate();
     let conn = Connection::open(db_full_path.to_str().unwrap())?;
     conn.execute("PRAGMA temp_store = MEMORY;")?;
     conn.execute("PRAGMA cache_size = -64000;")?;
@@ -599,8 +488,6 @@ pub fn connect_lys(root_path: &Path) -> Result<Connection, Error> {
     if conn.execute("SELECT 1 FROM tree_nodes LIMIT 1;").is_err() {
         conn.execute(LYS_INIT)?;
     }
-    // 2.5 RESET DES TODOS
-    let _ = crate::todo::check_and_reset_todos(&conn);
     // 3. RECONSOLIDATION DYNAMIQUE
     if let Some(prev_db) = find_latest_db(&db_dir, &db_full_path) {
         let attach_query = format!("ATTACH DATABASE '{}' AS old;", prev_db.display());

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "CMake Configure Check",
+    "trigger": "pre-commit",
+    "command": "cmake -S . -B build_check",
+    "is_active": true
+  },
+  {
+    "name": "Run CTest",
+    "trigger": "pre-push",
+    "command": "cd build_check && ctest --output-on-failure",
+    "is_active": true
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "C++ Format (clang-format)",
+    "trigger": "pre-commit",
+    "command": "find . -type f \\( -name '*.cpp' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cxx' \\) | xargs clang-format --Werror --dry-run",
+    "is_active": true
+  },
+  {
+    "name": "C++ Static Analysis (cppcheck)",
+    "trigger": "pre-commit",
+    "command": "cppcheck --error-exitcode=1 --quiet --enable=all --inconclusive --language=c++ .",
+    "is_active": true
+  }
+]

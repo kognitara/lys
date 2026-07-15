@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Go Format (gofmt)",
+    "trigger": "pre-commit",
+    "command": "test -z \"$(gofmt -l .)\"",
+    "is_active": true
+  },
+  {
+    "name": "Go Vet (Static Analysis)",
+    "trigger": "pre-commit",
+    "command": "go vet ./...",
+    "is_active": true
+  },
+  {
+    "name": "Go Test",
+    "trigger": "pre-commit",
+    "command": "go test ./...",
+    "is_active": true
+  }
+]

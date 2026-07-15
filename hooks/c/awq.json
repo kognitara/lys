@@ -1,0 +1,14 @@
+[
+  {
+    "name": "C Format (clang-format)",
+    "trigger": "pre-commit",
+    "command": "find . -type f \\( -name '*.c' -o -name '*.h' \\) | xargs clang-format --Werror --dry-run",
+    "is_active": true
+  },
+  {
+    "name": "C Static Analysis (cppcheck)",
+    "trigger": "pre-commit",
+    "command": "cppcheck --error-exitcode=1 --quiet --enable=all --inconclusive .",
+    "is_active": true
+  }
+]

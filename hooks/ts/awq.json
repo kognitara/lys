@@ -1,0 +1,20 @@
+[
+  {
+    "name": "TS Type Check",
+    "trigger": "pre-commit",
+    "command": "npx tsc --noEmit",
+    "is_active": true
+  },
+  {
+    "name": "TS Format (Prettier)",
+    "trigger": "pre-commit",
+    "command": "npx prettier --check .",
+    "is_active": true
+  },
+  {
+    "name": "TS Lint (ESLint)",
+    "trigger": "pre-commit",
+    "command": "npx eslint .",
+    "is_active": true
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Python Format (Ruff)",
+    "trigger": "pre-commit",
+    "command": "ruff format --check .",
+    "is_active": true
+  },
+  {
+    "name": "Python Lint (Ruff)",
+    "trigger": "pre-commit",
+    "command": "ruff check .",
+    "is_active": true
+  },
+  {
+    "name": "Python Tests (Pytest)",
+    "trigger": "pre-commit",
+    "command": "pytest",
+    "is_active": true
+  }
+]

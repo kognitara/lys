@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Ruby Format & Lint (RuboCop)",
+    "trigger": "pre-commit",
+    "command": "bundle exec rubocop --autocorrect --force-exclusion",
+    "is_active": true
+  },
+  {
+    "name": "Rails Security Scanner (Brakeman)",
+    "trigger": "pre-commit",
+    "command": "bundle exec brakeman --quiet --ensure-latest",
+    "is_active": true
+  },
+  {
+    "name": "Ruby Tests (Minitest/RSpec)",
+    "trigger": "pre-push",
+    "command": "bundle exec rake test",
+    "is_active": true
+  }
+]
