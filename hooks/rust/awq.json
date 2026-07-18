@@ -1,26 +1,44 @@
 [
   {
-    "name": "Rust Format (Strict)",
+    "name": "Check a local package and all of its dependencies for errors",
     "trigger": "pre-commit",
-    "command": "cargo fmt -- --check",
+    "command": "cargo check",
     "is_active": true
   },
   {
-    "name": "Rust Clippy (Zero Tolerance)",
+    "name": "Rust Format (Strict)",
+    "trigger": "pre-commit",
+    "command": "cargo fmt --check",
+    "is_active": true
+  },
+  {
+    "name": "Checks the crate graph",
+    "trigger": "pre-commit",
+    "command": "cargo deny check",
+    "is_active": true
+  },
+  {
+    "name": "Rust Clippy",
     "trigger": "pre-commit",
     "command": "cargo clippy -- -D warnings",
     "is_active": true
   },
   {
+    "name": "Run All Tests",
+    "trigger": "pre-commit",
+    "command": "cargo test --no-fail-fast",
+    "is_active": true
+  },
+  {
     "name": "Rust Security Audit",
-    "trigger": "pre-push",
+    "trigger": "pre-commit",
     "command": "cargo audit",
     "is_active": true
   },
   {
-    "name": "Run All Tests (Strict)",
-    "trigger": "pre-push",
-    "command": "cargo test --all-features",
+    "name": "Check unused depedencies",
+    "trigger": "pre-commit",
+    "command": "cargo machete",
     "is_active": true
   }
 ]

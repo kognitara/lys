@@ -5,7 +5,7 @@ edition = "2024"
 description = "A modern vcs"
 authors = ["Saigo Ekitae"]
 repository = "https://github.com/kognitara/awq"
-license = "AGPL-3.0"
+license = "AGPL-3.0-or-later"
 readme = "README.md"
 categories = ["development-tools"]
 
@@ -20,7 +20,7 @@ hex = "0.4.3"
 ignore = "0.4.27"
 inquire = { version = "0.9.3", features = ["date", "editor", "console"] }
 similar = "3.1.1"
-tabled = "0.21.0"
+tabled = "=0.21.0"
 tokio = { version = "1.49.0", features = ["full"] }
 uuid = { version = "1.20.0", features = ["v4"] }
 ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
